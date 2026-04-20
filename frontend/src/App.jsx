@@ -2,15 +2,24 @@ import { useMemo, useState } from 'react';
 import { generateSeating, getApiBaseUrl } from './lib/api';
 
 const BRANCHES = [
-  { value: 'CSE', label: 'CSE' },
-  { value: 'ECE', label: 'ECE' },
-  { value: 'ME', label: 'ME' }
+  { value: 'CSE', label: 'CSE', name: 'Computer Science & Engineering', accent: '#9ec4ff', surface: 'rgba(49, 91, 141, 0.22)', border: 'rgba(49, 91, 141, 0.35)' },
+  { value: 'ECE', label: 'ECE', name: 'Electronics & Communication Engineering', accent: '#a9f2df', surface: 'rgba(63, 124, 107, 0.22)', border: 'rgba(63, 124, 107, 0.35)' },
+  { value: 'ME', label: 'ME', name: 'Mechanical Engineering', accent: '#f3d29d', surface: 'rgba(141, 111, 58, 0.22)', border: 'rgba(141, 111, 58, 0.35)' },
+  { value: 'CE', label: 'CE', name: 'Civil Engineering', accent: '#ffb3c7', surface: 'rgba(166, 82, 114, 0.22)', border: 'rgba(166, 82, 114, 0.35)' },
+  { value: 'EEE', label: 'EEE', name: 'Electrical & Electronics Engineering', accent: '#f7d77d', surface: 'rgba(168, 134, 44, 0.22)', border: 'rgba(168, 134, 44, 0.35)' },
+  { value: 'IT', label: 'IT', name: 'Information Technology', accent: '#93d8ff', surface: 'rgba(57, 109, 161, 0.22)', border: 'rgba(57, 109, 161, 0.35)' },
+  { value: 'AIML', label: 'AIML', name: 'Artificial Intelligence & Machine Learning', accent: '#d6b2ff', surface: 'rgba(118, 77, 180, 0.22)', border: 'rgba(118, 77, 180, 0.35)' },
+  { value: 'AIDS', label: 'AIDS', name: 'Artificial Intelligence & Data Science', accent: '#8fe7c9', surface: 'rgba(47, 138, 111, 0.22)', border: 'rgba(47, 138, 111, 0.35)' },
+  { value: 'CSD', label: 'CSD', name: 'Computer Science & Design', accent: '#ffcf8b', surface: 'rgba(170, 109, 42, 0.22)', border: 'rgba(170, 109, 42, 0.35)' },
+  { value: 'CSBS', label: 'CSBS', name: 'Computer Science & Business Systems', accent: '#a7c7ff', surface: 'rgba(72, 100, 164, 0.22)', border: 'rgba(72, 100, 164, 0.35)' }
 ];
+
+const BRANCH_LOOKUP = Object.fromEntries(BRANCHES.map((branch) => [branch.value, branch]));
 
 const emptyStudentForm = {
   name: '',
   uid: '',
-  branch: 'CSE'
+  branch: BRANCHES[0].value
 };
 
 function normalizeName(value) {
@@ -138,7 +147,22 @@ function App() {
       showMessage('success', response.message || 'Seating arrangement generated successfully.');
     } catch (error) {
       setGrid([]);
-      showMessage('error', 'Failed to generate seating arrangement. Please check backend connection.');
+      if (error?.response) {
+        const status = error.response.status;
+        const backendMessage = error.response.data?.message || error.response.data?.error;
+
+        if (status === 404) {
+          showMessage('error', `Backend responded with 404 at ${apiBaseUrl}/generate. Make sure the seating backend is the app running on port 8080.`);
+        } else if (status >= 500) {
+          showMessage('error', `Backend error ${status}. Check the Spring Boot logs for the seating service.`);
+        } else {
+          showMessage('error', backendMessage || `Backend returned ${status}. Please check the submitted data.`);
+        }
+      } else if (error?.request) {
+        showMessage('error', `Could not reach the backend at ${apiBaseUrl}. Start the seating backend on port 8080 and retry.`);
+      } else {
+        showMessage('error', error?.message || 'Failed to generate seating arrangement.');
+      }
       console.error('Generate seating error:', error);
     } finally {
       setLoading(false);
@@ -210,7 +234,7 @@ function App() {
               >
                 {BRANCHES.map((branch) => (
                   <option key={branch.value} value={branch.value}>
-                    {branch.label}
+                    {branch.label} - {branch.name}
                   </option>
                 ))}
               </select>
@@ -230,7 +254,16 @@ function App() {
                     <p>{student.uid}</p>
                   </div>
                   <div className="student-card__meta">
-                    <span className={`branch-tag branch-${student.branch.toLowerCase()}`}>{student.branch}</span>
+                    <span
+                      className="branch-tag"
+                      style={{
+                        '--branch-accent': BRANCH_LOOKUP[student.branch]?.accent,
+                        '--branch-surface': BRANCH_LOOKUP[student.branch]?.surface,
+                        '--branch-border': BRANCH_LOOKUP[student.branch]?.border
+                      }}
+                    >
+                      {student.branch}
+                    </span>
                     <button type="button" className="ghost-button" onClick={() => removeStudent(index)}>
                       Remove
                     </button>
@@ -315,9 +348,9 @@ function App() {
           {Array.from({ length: rowsCount * colsCount }).map((_, index) => {
             const rowIndex = Math.floor(index / colsCount);
             const colIndex = index % colsCount;
-            const seat = grid?.[rowIndex]?.[colIndex] ?? null;
+            const seatValue = grid?.[rowIndex]?.[colIndex] ?? null;
 
-            if (!seat) {
+            if (!seatValue || (typeof seatValue === 'string' && !seatValue.trim())) {
               return (
                 <div key={index} className="seat seat-empty">
                   Empty seat
@@ -325,8 +358,21 @@ function App() {
               );
             }
 
+            const seat = typeof seatValue === 'string'
+              ? (students.find((student) => student.name === seatValue) ?? {
+                  name: seatValue,
+                  uid: 'UID unavailable',
+                  branch: 'Assigned'
+                })
+              : seatValue;
+
+            const seatBranchClass = typeof seat.branch === 'string' ? seat.branch.toLowerCase() : 'empty';
+
             return (
-              <div key={`${seat.uid}-${index}`} className={`seat seat-${seat.branch.toLowerCase()}`}>
+              <div
+                key={`${seat.uid ?? seat.name ?? 'seat'}-${index}`}
+                className={`seat seat-${seatBranchClass}`}
+              >
                 <strong>{seat.name}</strong>
                 <span>{seat.uid}</span>
                 <small>{seat.branch}</small>

@@ -224,10 +224,15 @@ h2 {
   border: 1px solid var(--line);
   border-radius: 16px;
   padding: 14px 16px;
-  background: rgba(255, 255, 255, 0.03);
+  background: rgba(9, 14, 24, 0.96);
   color: var(--text);
   outline: none;
   transition: border-color 160ms ease, transform 160ms ease, box-shadow 160ms ease;
+}
+
+.field select option {
+  background: #0b1020;
+  color: #f6f7fb;
 }
 
 .field input:focus,
@@ -319,11 +324,10 @@ h2 {
   font-size: 0.78rem;
   font-weight: 800;
   letter-spacing: 0.06em;
+  background: var(--branch-surface, rgba(255, 255, 255, 0.06));
+  color: var(--branch-accent, var(--text));
+  border: 1px solid var(--branch-border, rgba(255, 255, 255, 0.14));
 }
-
-.branch-cse { background: rgba(49, 91, 141, 0.22); color: #9ec4ff; }
-.branch-ece { background: rgba(63, 124, 107, 0.22); color: #a9f2df; }
-.branch-me { background: rgba(141, 111, 58, 0.22); color: #f3d29d; }
 
 .security-list {
   display: grid;
