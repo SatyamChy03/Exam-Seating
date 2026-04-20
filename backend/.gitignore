@@ -1,0 +1,33 @@
+# IDE and Editor
+.idea/
+.vscode/
+*.swp
+*.swo
+*~
+.DS_Store
+
+# Maven
+target/
+*.jar
+*.war
+*.zip
+
+# Build files
+*.class
+.classpath
+.project
+.settings/
+
+# Gradle (if used)
+.gradle/
+build/
+
+# Compilation output
+out/
+
+# Local properties
+local.properties
+
+# Environment-specific files
+*.log
+logs/
